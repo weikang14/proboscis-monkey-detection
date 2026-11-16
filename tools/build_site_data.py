@@ -1,15 +1,14 @@
-"""Build the site data: score every training run on the same test images, then render the demo clip.
+"""Build the site data: score every training run on the same test photos, then save example detections.
 
-    python tools/build_site_data.py --runs path/to/Trains --dataset path/to/Datasets --video path/to/sample.mp4
+    python tools/build_site_data.py --runs path/to/Trains --dataset path/to/Datasets
 
-Needs Ultralytics 8.3 or newer (YOLO11 layers) and ffmpeg (FFMPEG env var or on PATH).
+Needs Ultralytics 8.3 or newer (YOLO11 layers) and a CUDA GPU.
 """
 import argparse
 import csv
 import json
 import os
 import shutil
-import subprocess
 from pathlib import Path
 
 import yaml
@@ -79,49 +78,54 @@ def evaluate(runs: Path, dataset: Path) -> list[dict]:
     return out, nms, test
 
 
-def render_demo(video: Path, seconds: int = 30) -> dict:
-    """Detect on every frame, keep a per-second timeline, and write the busiest window as an H.264 clip."""
+def pick_examples(dataset: Path, n_correct: int = 4) -> dict:
+    """Run the final model on every test photo, count misses and false boxes, and save six examples."""
     import cv2
+    import torch
     from ultralytics import YOLO
+    from ultralytics.utils.metrics import box_iou
 
     model = YOLO(ROOT / "models" / "proboscis.pt")
-    detect = lambda frame: model.predict(frame, conf=CONF, device=0, verbose=False)[0]
-    cap = cv2.VideoCapture(str(video))
-    fps = cap.get(cv2.CAP_PROP_FPS)
-    hits = []
-    while (frame := cap.read()[1]) is not None:
-        hits.append(len(detect(frame).boxes))
-    n = int(seconds * fps)
-    start = max(range(0, max(1, len(hits) - n), int(fps)), key=lambda i: sum(h > 0 for h in hits[i:i + n]))
-    cap.set(cv2.CAP_PROP_POS_FRAMES, start)
-    w, h = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    ff = subprocess.Popen([os.environ.get("FFMPEG", "ffmpeg"), "-y", "-loglevel", "error", "-f", "rawvideo",
-                           "-pix_fmt", "bgr24", "-s", f"{w}x{h}", "-r", str(fps), "-i", "-", "-c:v", "libx264",
-                           "-crf", "26", "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(OUT / "demo.mp4")],
-                          stdin=subprocess.PIPE)
-    for _ in range(n):
-        ok, frame = cap.read()
-        if not ok:
-            break
-        ff.stdin.write(detect(frame).plot(line_width=2).tobytes())
-    ff.stdin.close()
-    ff.wait()
-    per_second = [max(hits[i:i + int(fps)]) for i in range(0, len(hits), int(fps))]
-    return {"duration_s": round(len(hits) / fps), "clip_start_s": round(start / fps), "clip_s": seconds,
-            "seconds_with_monkeys": sum(c > 0 for c in per_second), "per_second": per_second}
+    found = {"correct": [], "missed": [], "false box": []}
+    for img in sorted((dataset / "model2" / "test" / "images").glob("*.jpg")):
+        r = model.predict(img, conf=CONF, device=0, verbose=False)[0]
+        h, w = r.orig_shape
+        rows = [list(map(float, line.split()[1:])) for line in
+                (img.parent.parent / "labels" / f"{img.stem}.txt").read_text().splitlines() if line.strip()]
+        gt = torch.tensor([[(x - bw / 2) * w, (y - bh / 2) * h, (x + bw / 2) * w, (y + bh / 2) * h]
+                           for x, y, bw, bh in rows]).reshape(-1, 4)
+        iou = box_iou(gt, r.boxes.xyxy.cpu())
+        # ponytail: best-IoU match without one-to-one assignment, enough to sort photos into examples
+        missed = (iou.max(1).values < 0.5) if iou.shape[1] else torch.ones(len(gt), dtype=torch.bool)
+        false = int((iou.max(0).values < 0.5).sum()) if iou.shape[0] else len(r.boxes)
+        kind = "missed" if missed.any() else "false box" if false else "correct"
+        found[kind].append({"img": img, "r": r, "gt": gt, "missed": missed, "monkeys": len(gt), "false": false})
+    out = ROOT / "web" / "img" / "examples"
+    shutil.rmtree(out, ignore_errors=True)
+    out.mkdir(parents=True)
+    picks = sorted(found["correct"], key=lambda e: -e["monkeys"])[:n_correct] +         sorted(found["missed"], key=lambda e: -e["monkeys"])[:1] + sorted(found["false box"], key=lambda e: -e["false"])[:1]
+    examples = []
+    for i, e in enumerate(picks, 1):
+        im = e["r"].plot(line_width=2)
+        for x1, y1, x2, y2 in e["gt"][e["missed"]].int().tolist():
+            cv2.rectangle(im, (x1, y1), (x2, y2), (46, 138, 201), 3)  # amber: a monkey the model missed
+        cv2.imwrite(str(out / f"{i}.jpg"), im, [cv2.IMWRITE_JPEG_QUALITY, 85])
+        examples.append({"file": f"img/examples/{i}.jpg", "monkeys": e["monkeys"],
+                         "missed": int(e["missed"].sum()), "false_boxes": e["false"]})
+    return {"examples": examples, "photos": {k: len(v) for k, v in found.items()}}
 
 
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--runs", type=Path, required=True, help="the Trains folder with one sub-folder per run")
     ap.add_argument("--dataset", type=Path, required=True, help="the Datasets folder with every dataset version")
-    ap.add_argument("--video", type=Path, required=True, help="footage for the demo clip")
     a = ap.parse_args()
     OUT.mkdir(parents=True, exist_ok=True)
     runs, nms, test = evaluate(a.runs, a.dataset)
-    demo = render_demo(a.video)
-    (OUT / "site.json").write_text(json.dumps({"final": FINAL, "conf": CONF, **test, "runs": runs, "model3_val_map50_by_nms_iou": nms, "demo": demo}, indent=1))
-    print("done:", FINAL, demo["seconds_with_monkeys"], "of", demo["duration_s"], "s with monkeys")
+    ex = pick_examples(a.dataset)
+    (OUT / "site.json").write_text(json.dumps({"final": FINAL, "conf": CONF, **test, "runs": runs,
+                                               "model3_val_map50_by_nms_iou": nms, **ex}, indent=1))
+    print("done:", FINAL, ex["photos"])
 
 
 if __name__ == "__main__":

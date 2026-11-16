@@ -17,29 +17,22 @@
     <div class="wrap">
       <h1>Proboscis Monkey Detection</h1>
       <p class="lede">A YOLO11m model that finds proboscis monkeys in video, built at work to help monitor a reserve.</p>
-      <p class="links"><a href="https://github.com/weikang14/proboscis-monkey-detection">Source on GitHub</a> <a href="https://universe.roboflow.com/chua-wei-kang/proboscis-detector-ybjuj">Dataset on Roboflow</a> <a href="https://weikang14.github.io/license-plate-recognition/">Another project: license plate recognition</a></p>
+      <p class="links"><a href="https://github.com/weikang14/proboscis-monkey-detection">Source on GitHub</a></p>
     </div>
   </header>
 
   <main class="wrap" id="view">
-    <section class="panel demo">
-      <video src="data/demo.mp4" controls muted loop playsinline preload="metadata" aria-label="Proboscis monkeys on a feeding platform, each one boxed and labelled by the model"></video>
-      <div>
-        <h2>What it does</h2>
-        <p>The proboscis monkey lives only on Borneo and is listed as Endangered. Monitoring a reserve means watching hours of footage to see when and where the monkeys appear. This project trained a detector so that footage can be searched automatically.</p>
-        <p>The clip is <span data-v="demo.clip_s"></span> seconds from a <span data-v="demo.duration_s"></span>-second sample video, run through the final model at confidence <span data-v="conf"></span>. Over the whole video the model found monkeys in <span data-v="demo.seconds_with_monkeys"></span> of the <span data-v="demo.duration_s"></span> seconds.</p>
-      </div>
+    <section class="panel">
+      <h2>What it does</h2>
+      <p class="intro">The proboscis monkey lives only on Borneo and is listed as Endangered. Monitoring a reserve means watching hours of footage to see when and where the monkeys appear. This project trained a detector so that footage can be searched automatically.</p>
+      <div class="examples" id="examples"></div>
+      <p class="muted">The final model on six test photos at confidence <span data-v="conf"></span>. Blue boxes are its detections; amber boxes are monkeys it missed. Across all <span data-v="test_images"></span> test photos it found every monkey with no extra box on <span data-v="photos.correct"></span>, missed at least one monkey on <span data-v="photos.missed"></span>, and found every monkey but added an extra box on <span data-v="photos.false box"></span>.</p>
     </section>
 
     <section class="panel">
       <h2>Final model on the test set</h2>
       <div class="stats" id="stats"></div>
       <p class="muted"><span data-v="final"></span>: YOLO11m started from COCO weights. Scored on <span data-v="test_images"></span> test photos with <span data-v="test_boxes"></span> monkeys that no run trained on or was chosen with.</p>
-    </section>
-
-    <section class="panel">
-      <h2>Monkeys found per second of the sample video</h2>
-      <div class="chart short"><canvas id="timeline" aria-label="Bar chart of how many monkeys the model found in each second of the sample video"></canvas></div>
     </section>
 
     <section class="panel prose">
@@ -86,7 +79,7 @@
       <h2>Who built what</h2>
       <ul>
         <li>Labelling the dataset and training every model: weikang14, as a project at work</li>
-        <li>This page, re-scoring the runs on one test set and the demo clip: built with Claude Code, an AI coding assistant</li>
+        <li>This page, re-scoring the runs on one test set and picking the example detections: built with Claude Code, an AI coding assistant</li>
       </ul>
     </section>
   </main>

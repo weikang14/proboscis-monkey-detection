@@ -4,7 +4,7 @@
 
 A YOLO11m model that finds proboscis monkeys in video, built at work to help monitor a reserve. The dataset was labelled by hand, six models were trained on five versions of it, and every model was then re-scored on the same test photos to choose the final one.
 
-![Demo](docs/screenshot.png)
+![The page](docs/screenshot.png)
 
 ## Background and goal
 
@@ -12,7 +12,7 @@ The proboscis monkey (*Nasalis larvatus*) lives only on Borneo and is listed as 
 
 ## Dataset
 
-[Proboscis detector on Roboflow Universe](https://universe.roboflow.com/chua-wei-kang/proboscis-detector-ybjuj), one class.
+Labelled in Roboflow with one class, proboscis monkey.
 
 - 772 training photos labelled by hand, plus 258 validation and 257 test photos (345 monkeys in the test photos).
 - Five versions were exported. Each later version adds augmented copies of the same 772 photos: 772, 983, 1,353, 1,544 and 2,316 training images. The last version's copies use flips, 90° rotations and up to 5% changes in brightness and exposure.
@@ -31,7 +31,7 @@ All runs use YOLO11m at image size 640 and batch 16. `tools/build_site_data.py` 
 | **Model3 (final)** | 2,316 | COCO pre-trained | 76 of 100 | 0.857 | **0.917** | **0.568** | 0.889 | 0.855 |
 | Model3.2 | 2,316 | continued from Model3 | 87 of 150 | 0.865 | 0.908 | 0.564 | 0.912 | 0.869 |
 
-Model3 has the highest test mAP50 and mAP50-95, so it is the final model (`models/proboscis.pt`). On the 400-second sample video it found monkeys in 362 seconds at confidence 0.5.
+Model3 has the highest test mAP50 and mAP50-95, so it is the final model (`models/proboscis.pt`). At confidence 0.5 it found every monkey with no extra box on 217 of the 257 test photos, missed at least one monkey on 36, and found every monkey but added an extra box on 4 more.
 
 ## What the experiments showed
 
@@ -50,14 +50,14 @@ The model knows one class. It has not been tested on other primates that share t
 ## Who built what
 
 - **weikang14, as a project at work:** labelling the dataset and training every model. The company is not named here.
-- **Built with [Claude Code](https://claude.com/claude-code), an AI coding assistant:** this page, re-scoring the runs on one test set (`tools/build_site_data.py`) and the demo clip.
+- **Built with [Claude Code](https://claude.com/claude-code), an AI coding assistant:** this page, re-scoring the runs on one test set and picking the example detections (`tools/build_site_data.py`).
 
 ## Repository layout
 
 ```
 models/proboscis.pt          final model (Model3, YOLO11m)
 training_results/<run>/      args, metrics per epoch and plots of each run
-tools/build_site_data.py     re-scores every run on the test photos, renders the demo clip, writes web/data/
+tools/build_site_data.py     re-scores every run on the test photos, saves example detections, writes web/data/
 tools/serve.py               local static server (supports video seeking)
 web/                         the page (plain HTML, CSS, JS and Chart.js)
 tests/                       checks that this README matches web/data/site.json
@@ -69,10 +69,10 @@ tests/                       checks that this README matches web/data/site.json
 python tools/serve.py        # then open http://127.0.0.1:8765
 ```
 
-Rebuilding the site data needs Ultralytics 8.3 or newer, a CUDA GPU, ffmpeg, the run folders with their weights and the dataset (not in this repository):
+Rebuilding the site data needs Ultralytics 8.3 or newer, a CUDA GPU, the run folders with their weights and the dataset (not in this repository):
 
 ```
-python tools/build_site_data.py --runs path/to/Trains --dataset path/to/Datasets --video path/to/sample.mp4
+python tools/build_site_data.py --runs path/to/Trains --dataset path/to/Datasets
 python -m pytest tests
 ```
 

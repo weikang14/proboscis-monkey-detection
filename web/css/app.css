@@ -16,7 +16,7 @@
 html { -webkit-text-size-adjust: 100%; }
 body { margin: 0; background: var(--paper); color: var(--ink); font: 400 15px/1.55 var(--font); font-variant-numeric: tabular-nums; }
 a { color: var(--sign-2); }
-img, video { max-width: 100%; display: block; }
+img { max-width: 100%; display: block; }
 :focus-visible { outline: 3px solid var(--sign-2); outline-offset: 2px; }
 
 .wrap { max-width: 1080px; margin: 0 auto; padding: 0 16px; }
@@ -35,9 +35,11 @@ h3 { margin: 18px 0 4px; font: 600 16px/1.3 var(--font); color: var(--sign); }
 .prose h2:not(:first-child) { margin-top: 22px; }
 .muted { color: var(--ink-2); font-size: 14px; }
 
-.demo { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 20px; align-items: start; }
-.demo video { width: 100%; border-radius: 6px; background: #000; }
-@media (max-width: 760px) { .demo { grid-template-columns: 1fr; } }
+.intro { max-width: 72ch; }
+.examples { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: 12px; margin: 14px 0 10px; }
+.examples figure { margin: 0; }
+.examples img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 6px; }
+.examples figcaption { margin-top: 4px; font-size: 14px; color: var(--ink-2); }
 
 .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 10px; }
 .stat { border-left: 3px solid var(--sign-2); padding: 4px 12px; }
@@ -45,7 +47,6 @@ h3 { margin: 18px 0 4px; font: 600 16px/1.3 var(--font); color: var(--sign); }
 .stat span { color: var(--ink-2); font-size: 14px; }
 
 .chart { position: relative; height: 300px; margin: 6px 0 14px; }
-.chart.short { height: 180px; }
 
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: 14px; }

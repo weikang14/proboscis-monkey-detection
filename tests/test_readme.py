@@ -23,9 +23,10 @@ def test_final_model_is_the_best_on_test():
 
 
 def test_findings_quote_the_data():
-    nms, demo = SITE["model3_val_map50_by_nms_iou"], SITE["demo"]
+    nms, photos = SITE["model3_val_map50_by_nms_iou"], SITE["photos"]
     test = [r["test"]["map50"] for r in SITE["runs"]]
     assert f"from {nms['0.9']:.3f} to {nms['0.7']:.3f}" in README
     assert f"between {min(test):.3f} and {max(test):.3f}" in README
-    assert f"found monkeys in {demo['seconds_with_monkeys']} seconds" in README
+    assert f"on {photos['correct']} of the {SITE['test_images']} test photos, missed at least one monkey on {photos['missed']}" in README
+    assert f"added an extra box on {photos['false box']} more" in README
     assert f"({SITE['test_boxes']} monkeys in the test photos)" in README
