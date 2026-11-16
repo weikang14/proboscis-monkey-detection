@@ -1,0 +1,31 @@
+"""The README's numbers must match the published site data."""
+import json
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+SITE = json.loads((ROOT / "web" / "data" / "site.json").read_text(encoding="utf-8"))
+README = (ROOT / "README.md").read_text(encoding="utf-8")
+
+
+def test_runs_table_matches_the_data():
+    for r in SITE["runs"]:
+        t = r["test"]
+        cells = [f"{r['train_images']:,}", r["start"], f"{r['best_epoch']} of {r['epochs_run']}", f"{r['val_map50']:.3f}",
+                 f"{t['map50']:.3f}", f"{t['map50_95']:.3f}", f"{t['precision']:.3f}", f"{t['recall']:.3f}"]
+        row = next(line for line in README.splitlines() if line.startswith(f"| {r['run']}") or line.startswith(f"| **{r['run']}"))
+        assert all(c in row for c in cells), (r["run"], row)
+
+
+def test_final_model_is_the_best_on_test():
+    best = max(SITE["runs"], key=lambda r: (r["test"]["map50_95"], r["test"]["map50"]))
+    assert best["run"] == SITE["final"]
+    assert f"**{SITE['final']} (final)**" in README
+
+
+def test_findings_quote_the_data():
+    nms, demo = SITE["model3_val_map50_by_nms_iou"], SITE["demo"]
+    test = [r["test"]["map50"] for r in SITE["runs"]]
+    assert f"from {nms['0.9']:.3f} to {nms['0.7']:.3f}" in README
+    assert f"between {min(test):.3f} and {max(test):.3f}" in README
+    assert f"found monkeys in {demo['seconds_with_monkeys']} seconds" in README
+    assert f"({SITE['test_boxes']} monkeys in the test photos)" in README

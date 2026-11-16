@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Proboscis Monkey Detection</title>
+  <meta name="description" content="A YOLO11m model that finds proboscis monkeys in video, with six training runs re-scored on one test set.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600&display=swap">
+  <link rel="stylesheet" href="css/app.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js" defer></script>
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+  <header class="hero">
+    <div class="wrap">
+      <h1>Proboscis Monkey Detection</h1>
+      <p class="lede">A YOLO11m model that finds proboscis monkeys in video, built at work to help monitor a reserve.</p>
+      <p class="links"><a href="https://github.com/weikang14/proboscis-monkey-detection">Source on GitHub</a> <a href="https://universe.roboflow.com/chua-wei-kang/proboscis-detector-ybjuj">Dataset on Roboflow</a> <a href="https://weikang14.github.io/license-plate-recognition/">Another project: license plate recognition</a></p>
+    </div>
+  </header>
+
+  <main class="wrap" id="view">
+    <section class="panel demo">
+      <video src="data/demo.mp4" controls muted loop playsinline preload="metadata" aria-label="Proboscis monkeys on a feeding platform, each one boxed and labelled by the model"></video>
+      <div>
+        <h2>What it does</h2>
+        <p>The proboscis monkey lives only on Borneo and is listed as Endangered. Monitoring a reserve means watching hours of footage to see when and where the monkeys appear. This project trained a detector so that footage can be searched automatically.</p>
+        <p>The clip is <span data-v="demo.clip_s"></span> seconds from a <span data-v="demo.duration_s"></span>-second sample video, run through the final model at confidence <span data-v="conf"></span>. Over the whole video the model found monkeys in <span data-v="demo.seconds_with_monkeys"></span> of the <span data-v="demo.duration_s"></span> seconds.</p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Final model on the test set</h2>
+      <div class="stats" id="stats"></div>
+      <p class="muted"><span data-v="final"></span>: YOLO11m started from COCO weights. Scored on <span data-v="test_images"></span> test photos with <span data-v="test_boxes"></span> monkeys that no run trained on or was chosen with.</p>
+    </section>
+
+    <section class="panel">
+      <h2>Monkeys found per second of the sample video</h2>
+      <div class="chart short"><canvas id="timeline" aria-label="Bar chart of how many monkeys the model found in each second of the sample video"></canvas></div>
+    </section>
+
+    <section class="panel prose">
+      <h2>The dataset</h2>
+      <p>772 photos labelled by hand in Roboflow with one class, proboscis monkey, plus 258 validation and 257 test photos. Five versions of the dataset were exported. Each later version adds augmented copies of the same 772 photos, which grows the training set to 983, 1,353, 1,544 and finally 2,316 images; the last version's copies use flips, 90° rotations and up to 5% changes in brightness and exposure. The validation and test photos and their labels are identical in every version, so every run can be compared on them.</p>
+    </section>
+
+    <section class="panel">
+      <h2>Six training runs, one test set</h2>
+      <p class="muted">Validation mAP50 is what each run logged during training, under its own settings. Test mAP50 is every run re-scored on the shared test photos with the same settings: NMS IoU 0.7, image size 640.</p>
+      <div class="chart"><canvas id="runs-chart" aria-label="Bar chart comparing each run's logged validation mAP50 with its test mAP50"></canvas></div>
+      <div class="table-wrap">
+        <table id="runs-table">
+          <thead><tr><th>Run</th><th>Training images</th><th>Starting weights</th><th>Best epoch</th><th>Validation mAP50 (logged)</th><th>Test mAP50</th><th>Test mAP50-95</th><th>Precision</th><th>Recall</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel prose">
+      <h2>What the experiments showed</h2>
+      <h3>More copies of the same photos did not help</h3>
+      <p>Growing the training set from 772 to 2,316 images moved test mAP50 only between <span data-v="test_min"></span> and <span data-v="test_max"></span>, because every added image is a copy of one of the same 772 photos. The next gain has to come from newly labelled photos.</p>
+      <h3>Pre-trained weights converged faster, not higher</h3>
+      <p>Started from COCO weights, Model3 reached its best validation score at epoch <span data-v="runs.Model3.best_epoch"></span>; the runs from scratch needed <span data-v="scratch_epochs"></span> epochs. On the test set they score about the same. Model3 also changed other settings (dropout 0.9, learning rate 0.001, copy-paste 0.5), so the speed-up cannot be put on the weights alone.</p>
+      <h3>One setting made the best model look like the worst</h3>
+      <p>Model3 and Model3.2 were trained with NMS IoU 0.9, which keeps overlapping duplicate boxes, so their validation mAP50 during training was the lowest of the six. Scored again on the same validation photos at the default 0.7, Model3 goes from <span data-v="nms_hi"></span> to <span data-v="nms_lo"></span> and is the best run on the test set. Runs can only be compared under the same evaluation settings.</p>
+    </section>
+
+    <section class="panel">
+      <h2>Training curves of the final model</h2>
+      <a href="img/final-results.png"><img src="img/final-results.png" alt="Model3 training losses, precision, recall, mAP50 and mAP50-95 over 100 epochs" loading="lazy"></a>
+      <p class="muted">100 epochs. The validation curves were computed at NMS IoU 0.9, so they sit below the test scores above.</p>
+    </section>
+
+    <section class="panel prose">
+      <h2>Limitations and next steps</h2>
+      <p>The model knows one class. It has not been tested on other primates that share the habitat, such as macaques, so false alarms on them are unmeasured. Each frame is scored on its own, so a monkey that stays in view for a minute is found again in every frame rather than counted once.</p>
+      <ol>
+        <li>Label more new photos instead of making more copies of the same ones.</li>
+        <li>Track monkeys across frames, so the system can count individuals and log when each one appears.</li>
+        <li>Add photos of other primates to measure and reduce false alarms.</li>
+      </ol>
+      <h2>Who built what</h2>
+      <ul>
+        <li>Labelling the dataset and training every model: weikang14, as a project at work</li>
+        <li>This page, re-scoring the runs on one test set and the demo clip: built with Claude Code, an AI coding assistant</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>
