@@ -43,7 +43,7 @@
     <section class="panel">
       <h2>Six training runs, one test set</h2>
       <p class="muted">Validation mAP50 is what each run logged during training, under its own settings. Test mAP50 is every run re-scored on the shared test photos with the same settings: NMS IoU 0.7, image size 640.</p>
-      <div class="chart"><canvas id="runs-chart" aria-label="Bar chart comparing each run's logged validation mAP50 with its test mAP50"></canvas></div>
+      <div class="chart"><canvas id="runs-chart" aria-label="Dot plot comparing each run's logged validation mAP50 with its test mAP50"></canvas></div>
       <div class="table-wrap">
         <table id="runs-table">
           <thead><tr><th>Run</th><th>Training images</th><th>Starting weights</th><th>Best epoch</th><th>Validation mAP50 (logged)</th><th>Test mAP50</th><th>Test mAP50-95</th><th>Precision</th><th>Recall</th></tr></thead>
