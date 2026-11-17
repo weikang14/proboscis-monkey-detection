@@ -30,3 +30,11 @@ def test_findings_quote_the_data():
     assert f"on {photos['correct']} of the {SITE['test_images']} test photos, missed at least one monkey on {photos['missed']}" in README
     assert f"added an extra box on {photos['false box']} more" in README
     assert f"({SITE['test_boxes']} monkeys in the test photos)" in README
+
+
+def test_video_section_quotes_the_data_and_credits_every_clip():
+    p = [f"{100 * v['frames_boxed'] / v['frames']:.0f}%" for v in SITE["video"]]
+    assert f"drew a box on {p[0]} of the frames of the first clip, {p[1]} of the second and {p[2]} of the third" in README
+    for v in SITE["video"]:
+        assert f"[{v['title']}]({v['page']})" in README
+    assert "CC BY-SA 2.0" in README

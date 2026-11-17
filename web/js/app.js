@@ -11,6 +11,8 @@ export function facts(site) {
     nms_hi: f3(site.model3_val_map50_by_nms_iou["0.9"]), nms_lo: f3(site.model3_val_map50_by_nms_iou["0.7"]),
     test_min: f3(Math.min(...test)), test_max: f3(Math.max(...test)),
     scratch_epochs: `${Math.min(...scratch)} to ${Math.max(...scratch)}`,
+    video_pcts: ((p) => `${p[0]} of the frames of the first clip, ${p[1]} of the second and ${p[2]} of the third`)(
+      site.video.map((v) => `${Math.round((100 * v.frames_boxed) / v.frames)}%`)),
   };
 }
 
@@ -28,6 +30,7 @@ export function fill(root, site) {
   const t = f.runs[site.final].test;
   root.querySelector("#stats").innerHTML = [["mAP50", t.map50], ["mAP50-95", t.map50_95], ["Precision", t.precision], ["Recall", t.recall]]
     .map(([k, v]) => `<div class="stat"><b>${f3(v)}</b><span>${k}</span></div>`).join("");
+  root.querySelector("#video-credits").innerHTML = site.video.map((v) => `<a href="${v.page}">${v.title}</a>`).join(", ");
   root.querySelector("#examples").innerHTML = site.examples.map((e) => `
     <figure><a href="${e.file}"><img src="${e.file}" alt="${caption(e)}" loading="lazy"></a><figcaption>${caption(e)}</figcaption></figure>`).join("");
   root.querySelector("#runs-table tbody").innerHTML = site.runs.map((r) => `

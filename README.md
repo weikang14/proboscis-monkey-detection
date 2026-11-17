@@ -10,6 +10,18 @@ A YOLO11m model that finds proboscis monkeys in video, built at work to help mon
 
 The proboscis monkey (*Nasalis larvatus*) lives only on Borneo and is listed as Endangered. Monitoring a reserve means watching hours of camera footage to see when and where the monkeys appear. The goal of this project was a detector that finds them in that footage automatically, so the footage can be searched instead of watched.
 
+## On video
+
+The page opens with three wildlife clips filmed in Bako National Park, Sarawak, run frame by frame through the final model at confidence 0.5. None of their frames are in the dataset. The model drew a box on 84% of the frames of the first clip, 96% of the second and 100% of the third. In the first clip, with the monkey against a bright sky, the box drops out for a few frames at a time and at times becomes two overlapping boxes on the same monkey; in the second it drops out when the monkey moves behind leaves.
+
+The clips are by Bernard DUPONT, from Wikimedia Commons, licensed [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0/):
+
+- [Proboscis Monkey (Nasalis larvatus) male eating](https://commons.wikimedia.org/wiki/File:Proboscis_Monkey_(Nasalis_larvatus)_male_eating.webm), 17 s
+- [Proboscis Monkey (Nasalis larvatus) male eating leaves](https://commons.wikimedia.org/wiki/File:Proboscis_Monkey_(Nasalis_larvatus)_male_eating_leaves.webm), 32 s
+- [Proboscis Monkey (Nasalis larvatus) young male eating leaves](https://commons.wikimedia.org/wiki/File:Proboscis_Monkey_(Nasalis_larvatus)_young_male_eating_leaves.webm), 10 s
+
+`web/data/demo.mp4` joins them with the model's boxes drawn on and is shared under the same licence.
+
 ## Dataset
 
 Labelled in Roboflow with one class, proboscis monkey.
@@ -50,14 +62,14 @@ The model knows one class. It has not been tested on other primates that share t
 ## Who built what
 
 - **weikang14, as a project at work:** labelling the dataset and training every model. The company is not named here.
-- **Built with [Claude Code](https://claude.com/claude-code), an AI coding assistant:** this page, re-scoring the runs on one test set and picking the example detections (`tools/build_site_data.py`).
+- **Built with [Claude Code](https://claude.com/claude-code), an AI coding assistant:** this page, re-scoring the runs on one test set and picking the example detections and running the final model on the video clips (`tools/build_site_data.py`).
 
 ## Repository layout
 
 ```
 models/proboscis.pt          final model (Model3, YOLO11m)
 training_results/<run>/      args, metrics per epoch and plots of each run
-tools/build_site_data.py     re-scores every run on the test photos, saves example detections, writes web/data/
+tools/build_site_data.py     re-scores every run on the test photos, saves example detections, renders the video, writes web/data/
 tools/serve.py               local static server (supports video seeking)
 web/                         the page (plain HTML, CSS, JS and Chart.js)
 tests/                       checks that this README matches web/data/site.json
@@ -69,10 +81,11 @@ tests/                       checks that this README matches web/data/site.json
 python tools/serve.py        # then open http://127.0.0.1:8765
 ```
 
-Rebuilding the site data needs Ultralytics 8.3 or newer, a CUDA GPU, the run folders with their weights and the dataset (not in this repository):
+Rebuilding the site data needs Ultralytics 8.3 or newer, a CUDA GPU, the run folders with their weights and the dataset (not in this repository). The video also needs ffmpeg and the three clips downloaded from Wikimedia Commons into one folder, under their Commons file names. Each part can be rebuilt on its own:
 
 ```
 python tools/build_site_data.py --runs path/to/Trains --dataset path/to/Datasets
+python tools/build_site_data.py --clips path/to/clips
 python -m pytest tests
 ```
 

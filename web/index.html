@@ -25,6 +25,10 @@
     <section class="panel">
       <h2>What it does</h2>
       <p class="intro">The proboscis monkey lives only on Borneo and is listed as Endangered. Monitoring a reserve means watching hours of footage to see when and where the monkeys appear. This project trained a detector so that footage can be searched automatically.</p>
+      <video class="clip" controls muted playsinline preload="none" poster="img/video-poster.jpg" src="data/demo.mp4"
+             aria-label="Three clips of proboscis monkeys in trees, with the final model's boxes drawn on"></video>
+      <p class="muted">Three wildlife clips filmed in Bako National Park, Sarawak, run frame by frame through the final model at confidence <span data-v="conf"></span>. None of their frames are in the dataset. The model drew a box on <span data-v="video_pcts"></span>. In the first clip, with the monkey against a bright sky, the box drops out for a few frames at a time and at times becomes two overlapping boxes on the same monkey; in the second it drops out when the monkey moves behind leaves.</p>
+      <p class="muted">Clips by Bernard DUPONT from Wikimedia Commons: <span id="video-credits"></span>. Licensed <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC BY-SA 2.0</a>; this version with the model's boxes drawn on is shared under the same licence.</p>
       <div class="examples" id="examples"></div>
       <p class="muted">The final model on six test photos at confidence <span data-v="conf"></span>. Blue boxes are its detections; amber boxes are monkeys it missed. Across all <span data-v="test_images"></span> test photos it found every monkey with no extra box on <span data-v="photos.correct"></span>, missed at least one monkey on <span data-v="photos.missed"></span>, and found every monkey but added an extra box on <span data-v="photos.false box"></span>.</p>
     </section>

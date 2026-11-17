@@ -1,14 +1,16 @@
 """Build the site data: score every training run on the same test photos, then save example detections.
 
-    python tools/build_site_data.py --runs path/to/Trains --dataset path/to/Datasets
+    python tools/build_site_data.py --runs path/to/Trains --dataset path/to/Datasets --clips path/to/clips
 
-Needs Ultralytics 8.3 or newer (YOLO11 layers) and a CUDA GPU.
+Needs Ultralytics 8.3 or newer (YOLO11 layers), a CUDA GPU, and ffmpeg (FFMPEG env var or on PATH) for --clips.
+Either part can be rebuilt on its own: the other keeps its values in web/data/site.json.
 """
 import argparse
 import csv
 import json
 import os
 import shutil
+import subprocess
 from pathlib import Path
 
 import yaml
@@ -27,6 +29,13 @@ RUNS = [
 ]
 FINAL = "Model3"  # highest test mAP50 and mAP50-95
 CONF = 0.5
+# Wikimedia Commons clips by Bernard DUPONT (CC BY-SA 2.0), filmed in Bako National Park, Sarawak, and not in the dataset.
+# A fourth clip, "Proboscis_monkey_(Nasalis_larvatus)_eating_leaves.webm", is the same footage as the third and is left out.
+CLIPS = [
+    "Proboscis_Monkey_(Nasalis_larvatus)_male_eating.webm",
+    "Proboscis_Monkey_(Nasalis_larvatus)_male_eating_leaves.webm",
+    "Proboscis_Monkey_(Nasalis_larvatus)_young_male_eating_leaves.webm",
+]
 KEEP = ["args.yaml", "results.csv", "results.png", "PR_curve.png", "confusion_matrix_normalized.png", "val_batch0_pred.jpg"]
 
 
@@ -115,17 +124,57 @@ def pick_examples(dataset: Path, n_correct: int = 4) -> dict:
     return {"examples": examples, "photos": {k: len(v) for k, v in found.items()}}
 
 
+def render_video(clips: Path, width: int = 854, poster: tuple = (2, 5.0)) -> list[dict]:
+    """Run the final model on every frame of the Commons clips and join them into web/data/demo.mp4.
+
+    poster: (clip index, second) of the frame saved as the video's poster image.
+    """
+    import cv2
+    from ultralytics import YOLO
+
+    model = YOLO(ROOT / "models" / "proboscis.pt")
+    height = width * 9 // 16
+    ff = subprocess.Popen([os.environ.get("FFMPEG", "ffmpeg"), "-y", "-loglevel", "error", "-f", "rawvideo",
+                           "-pix_fmt", "bgr24", "-s", f"{width}x{height}", "-r", "25", "-i", "-", "-c:v", "libx264",
+                           "-crf", "32", "-preset", "slow", "-pix_fmt", "yuv420p", "-movflags", "+faststart",
+                           str(OUT / "demo.mp4")], stdin=subprocess.PIPE)
+    out = []
+    for i, name in enumerate(CLIPS):
+        frames = boxed = 0
+        for r in model.predict(str(clips / name), conf=CONF, device=0, stream=True, verbose=False):
+            im = cv2.resize(r.plot(line_width=3), (width, height), interpolation=cv2.INTER_AREA)
+            ff.stdin.write(im.tobytes())
+            if (i, frames) == (poster[0], int(poster[1] * 25)):
+                cv2.imwrite(str(ROOT / "web" / "img" / "video-poster.jpg"), im, [cv2.IMWRITE_JPEG_QUALITY, 85])
+            frames += 1
+            boxed += len(r.boxes) > 0
+        out.append({"title": name[:-5].replace("_", " "), "page": f"https://commons.wikimedia.org/wiki/File:{name}",
+                    "seconds": round(frames / 25, 1), "frames": frames, "frames_boxed": boxed})
+        print(out[-1], flush=True)
+    ff.stdin.close()
+    ff.wait()
+    return out
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--runs", type=Path, required=True, help="the Trains folder with one sub-folder per run")
-    ap.add_argument("--dataset", type=Path, required=True, help="the Datasets folder with every dataset version")
+    ap.add_argument("--runs", type=Path, help="the Trains folder with one sub-folder per run")
+    ap.add_argument("--dataset", type=Path, help="the Datasets folder with every dataset version")
+    ap.add_argument("--clips", type=Path, help="folder holding the CLIPS files, downloaded from Wikimedia Commons")
     a = ap.parse_args()
+    if not (a.runs and a.dataset) and not a.clips:
+        ap.error("give --runs and --dataset, --clips, or all three")
     OUT.mkdir(parents=True, exist_ok=True)
-    runs, nms, test = evaluate(a.runs, a.dataset)
-    ex = pick_examples(a.dataset)
-    (OUT / "site.json").write_text(json.dumps({"final": FINAL, "conf": CONF, **test, "runs": runs,
-                                               "model3_val_map50_by_nms_iou": nms, **ex}, indent=1))
-    print("done:", FINAL, ex["photos"])
+    site_json = OUT / "site.json"
+    site = json.loads(site_json.read_text()) if site_json.exists() else {}
+    if a.runs and a.dataset:
+        runs, nms, test = evaluate(a.runs, a.dataset)
+        site.update({"final": FINAL, "conf": CONF, **test, "runs": runs, "model3_val_map50_by_nms_iou": nms,
+                     **pick_examples(a.dataset)})
+    if a.clips:
+        site["video"] = render_video(a.clips)
+    site_json.write_text(json.dumps(site, indent=1))
+    print("done:", FINAL, site.get("photos"), [v["frames_boxed"] for v in site.get("video", [])])
 
 
 if __name__ == "__main__":

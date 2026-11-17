@@ -147,5 +147,28 @@
   "correct": 217,
   "missed": 36,
   "false box": 4
- }
+ },
+ "video": [
+  {
+   "title": "Proboscis Monkey (Nasalis larvatus) male eating",
+   "page": "https://commons.wikimedia.org/wiki/File:Proboscis_Monkey_(Nasalis_larvatus)_male_eating.webm",
+   "seconds": 16.8,
+   "frames": 420,
+   "frames_boxed": 354
+  },
+  {
+   "title": "Proboscis Monkey (Nasalis larvatus) male eating leaves",
+   "page": "https://commons.wikimedia.org/wiki/File:Proboscis_Monkey_(Nasalis_larvatus)_male_eating_leaves.webm",
+   "seconds": 32.2,
+   "frames": 804,
+   "frames_boxed": 775
+  },
+  {
+   "title": "Proboscis Monkey (Nasalis larvatus) young male eating leaves",
+   "page": "https://commons.wikimedia.org/wiki/File:Proboscis_Monkey_(Nasalis_larvatus)_young_male_eating_leaves.webm",
+   "seconds": 9.6,
+   "frames": 240,
+   "frames_boxed": 240
+  }
+ ]
 }

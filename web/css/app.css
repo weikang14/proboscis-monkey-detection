@@ -36,6 +36,7 @@ h3 { margin: 18px 0 4px; font: 600 16px/1.3 var(--font); color: var(--sign); }
 .muted { color: var(--ink-2); font-size: 14px; }
 
 .intro { max-width: 72ch; }
+.clip { width: 100%; aspect-ratio: 16 / 9; margin: 14px 0 8px; border-radius: 6px; background: #000; display: block; }
 .examples { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: 12px; margin: 14px 0 10px; }
 .examples figure { margin: 0; }
 .examples img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 6px; }
